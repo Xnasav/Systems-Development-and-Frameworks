@@ -7,7 +7,6 @@ To execute:
 * Run "npm install" in the VueJS Folder
 * Run "npm run serve' in the VueJS Folder
 
-<<<<<<< HEAD:VueJS/README.md
 =======
 * Edit: display a form to update the todo
 * Save: update the todo and display it
