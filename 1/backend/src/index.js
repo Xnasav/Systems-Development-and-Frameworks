@@ -4,6 +4,8 @@ const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const { getDriver } = require('./neo4j.js')
 const { rule, shield, and, or, not } = require('graphql-shield')
+const { applyMiddleware } = require('graphql-middleware')
+const { makeExecutableSchema } = require("graphql-tools");
 
 var SECRET_KEY = fs.readFileSync('./src/key/secret.key', 'utf8');
 
@@ -14,13 +16,38 @@ const driver = getDriver()
 
 const isAuthenticated = rule({ cache: 'contextual' })(
     async (parent, args, ctx, info) => {
-      return ctx.user !== null
+      if(ctx.user) {
+        return true
+      } else {
+        return false
+      }
     },
 )
 
+const permissions = shield({
+  Query: {
+    completedTodos: isAuthenticated
+  },
+  Mutation: {
+    addTodo: isAuthenticated,
+    addUser: isAuthenticated,
+    deleteUser: isAuthenticated,
+    finishTodo: isAuthenticated,
+    deleteTodo: isAuthenticated,
+    editTodo: isAuthenticated,
+  }
+})
+
+const schema = applyMiddleware(
+    makeExecutableSchema({
+      typeDefs,
+      resolvers
+    }),
+    permissions,
+);
+
 const server = new ApolloServer({
-  typeDefs,
-  resolvers,
+  schema,
   context: async ({ req}) => {
     let token = req.headers.authorization
     let id = null
@@ -49,6 +76,8 @@ const server = new ApolloServer({
     })
     if (!currentUser){
       currentUser = null
+    } else {
+      currentUser = {user: currentUser}
     }
     return {
       driver,
@@ -56,6 +85,7 @@ const server = new ApolloServer({
     }
   }
 });
+
 
 server.listen().then(({ url }) => {
   console.log(`🚀 Server ready at ${url}`);

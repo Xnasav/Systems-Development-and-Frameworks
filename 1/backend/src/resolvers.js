@@ -60,7 +60,7 @@ const resolvers = {
     },
     Mutation: {
         addTodo: async (parent, args, context) => {
-            if (args.message != "" && args.message != null && context.login) {
+            if (args.message != "" && args.message != null) {
                 const {driver} = context
                 const createTodoCypher = `
                     CREATE (todo:Todo {params})
@@ -88,7 +88,7 @@ const resolvers = {
             return;
         },
         addUser: async (parent, args, context) => {
-            if (args.login != "" && args.login != null && args.password != "" && args.password != null && context.login) {
+            if (args.login != "" && args.login != null && args.password != "" && args.password != null) {
                 const {driver} = context
                 const params = {
                     id: uuid(),
@@ -110,7 +110,7 @@ const resolvers = {
             return false;
         },
         deleteUser: async (parent, args, context) => {
-            if (args.login != "" && args.login != null && args.password != "" && args.password != null && context.login) {
+            if (args.login != "" && args.login != null && args.password != "" && args.password != null) {
                 const {driver} = context
                 const createUserCypher = `
                     MATCH (user:User {params})
@@ -144,7 +144,7 @@ const resolvers = {
             }
         },
         editTodo: async (parent, args, context) => {
-            if (args.id != null && args.message != null && context.login) {
+            if (args.id != null && args.message != null) {
                 const {driver} = context
                 const editTodoCypher = `
                     MATCH (todo:Todo {id: $id})
@@ -171,7 +171,7 @@ const resolvers = {
 
         },
         finishWithMerge: async (parent, args, context) => {
-            if (args.id != null && context.login) {
+            if (args.id != null) {
                 const {driver} = context
                 const mergeTodoCypher = `
                     MERGE (todo:Todo {id: $id})
@@ -198,7 +198,7 @@ const resolvers = {
 
         },
         assignTodoToUser: async (parent, args, context) => {
-            if (args.id != null && args.user != null && context.login) {
+            if (args.id != null && args.user != null) {
                 const {driver} = context
                 const assignCypher = `
                     MATCH (u:User), (t:Todo)
@@ -216,7 +216,7 @@ const resolvers = {
             }
         },
         finishTodo: async (parent, args, context) => {
-            if (args.id != null && context.login) {
+            if (args.id != null) {
                 const {driver} = context
                 const finishTodoCypher = `
                 MATCH (todo:Todo{id: $id})
