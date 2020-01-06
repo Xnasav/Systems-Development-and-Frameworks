@@ -26,11 +26,11 @@ const isAuthenticated = rule({ cache: 'contextual' })(
 
 const permissions = shield({
   Query: {
+    todos: isAuthenticated,
     completedTodos: isAuthenticated
   },
   Mutation: {
     addTodo: isAuthenticated,
-    addUser: isAuthenticated,
     deleteUser: isAuthenticated,
     finishTodo: isAuthenticated,
     deleteTodo: isAuthenticated,

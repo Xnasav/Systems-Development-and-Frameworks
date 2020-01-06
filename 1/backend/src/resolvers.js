@@ -10,19 +10,23 @@ const resolvers = {
     Query: {
         todos: async (parent, args, context) => {
             // JSON.parse(JSON.stringify(data.todos))
-            if (args.limit != "" && args.limit != null && args.skip != "" && args.skip != null) {
+            if (args.limit !== "" && args.limit !== null && args.skip !== "" && args.skip !== null) {
                 const {driver} = context
                 let getTodoCypher
-
                 getTodoCypher = `
-                    MATCH (todo:Todo)
+                    MATCH (todo:Todo)-[:ASSIGNED]->(u:User)
+                    WHERE u.login = $username
                     RETURN todo.id, todo.message, todo.completed ORDER BY todo.message SKIP $skip LIMIT $limit 
                 `
 
 
                 const session = driver.session()
                 try {
-                    data = await session.run(getTodoCypher, {limit: args.limit, skip: args.skip})
+                    data = await session.run(getTodoCypher, {
+                        username: context.user.login,
+                        limit: args.limit,
+                        skip: args.skip
+                    })
                     const todos = await data.records.map(record => ({
                         id: record.get('todo.id'),
                         message: record.get('todo.message'),
@@ -39,12 +43,12 @@ const resolvers = {
         completedTodos: async (parent, args, context) => {
             const {driver} = context
             const getCompletedTodosCypher = `
-                    MATCH (todo:Todo) WHERE todo.completed = true 
+                    MATCH (todo:Todo)-[:ASSIGNED]->(u:User) WHERE todo.completed = true AND u.login = $username
                     RETURN todo.id, todo.message, todo.completed ORDER BY todo.message
              `
             const session = driver.session()
             try {
-                data = await session.run(getCompletedTodosCypher)
+                data = await session.run(getCompletedTodosCypher, {username: context.user.login})
                 const todos = await data.records.map(record => ({
                     id: record.get('todo.id'),
                     message: record.get('todo.message'),
@@ -66,10 +70,17 @@ const resolvers = {
                     CREATE (todo:Todo {params})
                     RETURN todo.id, todo.message, todo.completed
                 `
+                const assignCypher = `
+                    MATCH (u:User), (t:Todo)
+                    WHERE u.login = $login AND t.id = $id
+                    CREATE p=(u)<-[a:ASSIGNED]-(t)
+                    RETURN p
+                `
                 const params = {
                     message: args.message,
                     completed: false,
-                    id: uuid()
+                    id: uuid(),
+                    username: context.user.login
                 }
                 const session = driver.session()
                 try {
@@ -80,6 +91,8 @@ const resolvers = {
                         completed: record.get('todo.completed')
 
                     }))
+
+                    await session.run(assignCypher, {login: context.user.login, id: todo.id})
                     return todo;
                 } finally {
                     await session.close()
@@ -110,21 +123,21 @@ const resolvers = {
             return false;
         },
         deleteUser: async (parent, args, context) => {
-            if (args.login != "" && args.login != null && args.password != "" && args.password != null) {
-                const {driver} = context
-                const createUserCypher = `
-                    MATCH (user:User {params})
-                    DELETE user
-                `
-                const session = driver.session()
-                try {
-                    await session.run(createUserCypher)
-                } finally {
-                    await session.close()
-                }
-                return true
+            const {driver} = context
+            const createUserCypher = `
+                MATCH (u:User)<-[a:ASSIGNED]-(Todo) WHERE u.id = $id and u.login=$login
+                DELETE a, u
+            `
+            const session = driver.session()
+            try {
+                await session.run(createUserCypher, {id: context.user.id, login:context.user.login})
+            } catch(err) {
+                console.log(err)
+                return false
+            } finally {
+                await session.close()
             }
-            return false;
+            return true
         },
         deleteTodo: async (parent, args, context) => {
             if (args.id != null && context.login) {

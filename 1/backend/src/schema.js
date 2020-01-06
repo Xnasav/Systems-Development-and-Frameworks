@@ -22,7 +22,7 @@ type User {
 type Mutation {
 	addTodo(message: String!): Todo
 	addUser(login: String!, password: String!): Boolean
-	deleteUser(login: String, password: String): Boolean
+	deleteUser: Boolean
 	finishTodo(id: ID!): Todo
 	deleteTodo(id: ID!): Boolean
 	editTodo(id: ID!, message: String!): Todo

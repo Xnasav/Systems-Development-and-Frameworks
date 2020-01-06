@@ -15,7 +15,7 @@ beforeAll(async () => {
         resolvers,
         context: () => {
             return {
-                token: "meinsupertoken",
+                user: "meinsupertoken",
                 driver
             }
         }
