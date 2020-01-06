@@ -3,6 +3,7 @@ const { ApolloServer } = require('apollo-server');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
 const { getDriver } = require('./neo4j.js')
+const { rule, shield, and, or, not } = require('graphql-shield')
 
 var SECRET_KEY = fs.readFileSync('./src/key/secret.key', 'utf8');
 
@@ -11,15 +12,23 @@ const resolvers = require('./resolvers');
 
 const driver = getDriver()
 
+const isAuthenticated = rule({ cache: 'contextual' })(
+    async (parent, args, ctx, info) => {
+      return ctx.user !== null
+    },
+)
+
 const server = new ApolloServer({
   typeDefs,
   resolvers,
   context: async ({ req}) => {
     let token = req.headers.authorization
+    let id = null
     if (token){
       token = token.replace('Bearer ', '')
       try {
-        token = {token: jwt.verify(token, SECRET_KEY)}
+        const decoded = jwt.verify(token, SECRET_KEY)
+        id = decoded.sub
       }
       catch(err) {
         token = null
@@ -27,9 +36,23 @@ const server = new ApolloServer({
     } else {
       token = null
     }
+    const session = driver.session()
+    const getUserCypher = `
+    MATCH (user:User {id: $id})
+    RETURN user {.id, .login}
+    LIMIT 1
+  `
+    const result = await session.run(getUserCypher, { id: id })
+    await session.close()
+    let [currentUser] = await result.records.map(record => {
+      return record.get('user')
+    })
+    if (!currentUser){
+      currentUser = null
+    }
     return {
       driver,
-      token
+      ...currentUser
     }
   }
 });

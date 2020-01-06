@@ -4,9 +4,9 @@ let driver
 
 function getDriver(options = {}) {
     const {
-        uri = "bolt://127.0.0.1:7687",
+        uri = "bolt://neo4j:7687",
         username = "neo4j",
-        password = "neo4j",
+        password = "password",
     } = options
     if (!driver) {
         driver = neo4j.driver(uri, neo4j.auth.basic(username, password))

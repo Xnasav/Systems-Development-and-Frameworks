@@ -60,7 +60,7 @@ const resolvers = {
     },
     Mutation: {
         addTodo: async (parent, args, context) => {
-            if (args.message != "" && args.message != null && context.token) {
+            if (args.message != "" && args.message != null && context.login) {
                 const {driver} = context
                 const createTodoCypher = `
                     CREATE (todo:Todo {params})
@@ -88,15 +88,20 @@ const resolvers = {
             return;
         },
         addUser: async (parent, args, context) => {
-            if (args.login != "" && args.login != null && args.password != "" && args.password != null) {
+            if (args.login != "" && args.login != null && args.password != "" && args.password != null && context.login) {
                 const {driver} = context
+                const params = {
+                    id: uuid(),
+                    login: args.login,
+                    password: args.password
+                }
                 const createUserCypher = `
                     CREATE (user:User {params})
                     RETURN user
                 `
                 const session = driver.session()
                 try {
-                    await session.run(createUserCypher)
+                    await session.run(createUserCypher, {params})
                 } finally {
                     await session.close()
                 }
@@ -105,7 +110,7 @@ const resolvers = {
             return false;
         },
         deleteUser: async (parent, args, context) => {
-            if (args.login != "" && args.login != null && args.password != "" && args.password != null) {
+            if (args.login != "" && args.login != null && args.password != "" && args.password != null && context.login) {
                 const {driver} = context
                 const createUserCypher = `
                     MATCH (user:User {params})
@@ -122,7 +127,7 @@ const resolvers = {
             return false;
         },
         deleteTodo: async (parent, args, context) => {
-            if (args.id != null && context.token) {
+            if (args.id != null && context.login) {
                 const {driver} = context
                 const deleteTodoCypher = `
                     MATCH (todo:Todo {id: $id})
@@ -139,7 +144,7 @@ const resolvers = {
             }
         },
         editTodo: async (parent, args, context) => {
-            if (args.id != null && args.message != null && context.token) {
+            if (args.id != null && args.message != null && context.login) {
                 const {driver} = context
                 const editTodoCypher = `
                     MATCH (todo:Todo {id: $id})
@@ -166,7 +171,7 @@ const resolvers = {
 
         },
         finishWithMerge: async (parent, args, context) => {
-            if (args.id != null && context.token) {
+            if (args.id != null && context.login) {
                 const {driver} = context
                 const mergeTodoCypher = `
                     MERGE (todo:Todo {id: $id})
@@ -193,7 +198,7 @@ const resolvers = {
 
         },
         assignTodoToUser: async (parent, args, context) => {
-            if (args.id != null && args.user != null && context.token) {
+            if (args.id != null && args.user != null && context.login) {
                 const {driver} = context
                 const assignCypher = `
                     MATCH (u:User), (t:Todo)
@@ -211,7 +216,7 @@ const resolvers = {
             }
         },
         finishTodo: async (parent, args, context) => {
-            if (args.id != null && context.token) {
+            if (args.id != null && context.login) {
                 const {driver} = context
                 const finishTodoCypher = `
                 MATCH (todo:Todo{id: $id})
@@ -242,7 +247,7 @@ const resolvers = {
                 const {driver} = context
                 const getUserCypher = `
                 MATCH (user:User {login: $login, password: $password})
-                RETURN user.login, user.password
+                RETURN user.id, user.login, user.password
                 `
                 const session = driver.session()
                 try {
@@ -253,17 +258,16 @@ const resolvers = {
                 }
 
                 const [currentUsr] = await user.records.map(record => ({
+                    id: record.get('user.id'),
                     login: record.get('user.login'),
                     password: record.get('user.password')
 
                 }))
-
                 if (currentUsr.login === args.usr && currentUsr.password === args.pwd) {
-                    const token = jwt.sign(
-                        {name: currentUsr.name, id: currentUsr.id},
-                        SECRET_KEY,
-                        {expiresIn: '1d'}
-                    )
+                    const token = jwt.sign(currentUsr, SECRET_KEY, {
+                        expiresIn: '1d',
+                        subject: currentUsr.id.toString(),
+                    })
                     return token
                 }
                 return currentUsr.name

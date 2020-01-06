@@ -13,6 +13,7 @@ type Todo {
 }
 
 type User {
+    id: String!
     login: String!
     password: String!
 }
@@ -20,7 +21,7 @@ type User {
 
 type Mutation {
 	addTodo(message: String!): Todo
-	addUser(login: String, password: String): Boolean
+	addUser(login: String!, password: String!): Boolean
 	deleteUser(login: String, password: String): Boolean
 	finishTodo(id: ID!): Todo
 	deleteTodo(id: ID!): Boolean
@@ -30,7 +31,5 @@ type Mutation {
 	login(usr: String!, pwd: String!): String
 }		
 `;
-
-
 
 module.exports = typeDefs;
