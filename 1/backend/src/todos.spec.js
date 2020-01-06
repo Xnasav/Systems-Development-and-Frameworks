@@ -5,7 +5,7 @@ const typeDefs = require('./schema.js');
 const resolvers = require('./resolvers.js');
 const {getDriver} = require('./neo4j.js')
 
-let query, mutate, test_id
+let query, mutate, test_id, user
 
 const driver = getDriver()
 
@@ -15,7 +15,7 @@ beforeAll(async () => {
         resolvers,
         context: () => {
             return {
-                user: "meinsupertoken",
+                user: user,
                 driver
             }
         }
@@ -27,19 +27,24 @@ beforeAll(async () => {
 })
 
 beforeEach(async() => {
+    const user_tmp = await mutate({mutation: ADD_USER})
+    console.log(user_tmp)
+    user = {
+        id: user_tmp.data.addUser.id,
+        login: user_tmp.data.addUser.login
+    }
     const todo = await mutate({mutation: CREATE_TODO, variables: {message: "Test"}})
     test_id = todo.data.addTodo.id
-    await mutate({mutation: ADD_USER})
 })
 
 afterEach(async () => {
-    await mutate({mutation: DELETE_TODO, variables: {id: test_id}})
     await mutate({mutation: DELETE_USER})
+    await mutate({mutation: DELETE_TODO, variables: {id: test_id}})
 })
 
 const GET_TODOS = gql`
-query AllTodos{
-  todos(limit: 1){
+query AllTodos($limit: Int!){
+  todos(limit: $limit, skip: 0){
     message
     completed
     id
@@ -98,12 +103,15 @@ const FINISH_TODO = gql`
 
 const ADD_USER = gql`
 	mutation AddUser{
-		addUser(login: "milan", password: "password")
+		addUser(login: "milan", password: "password") {
+		id,
+		login
+		}
     }`;
 
 const DELETE_USER = gql`
 	mutation DeleteUser{
-		deleteUser(login: "milan", password: "password")
+		deleteUser
     }`;
 
 const ASSIGN_USER_TO_TODO = gql`
@@ -114,12 +122,12 @@ const ASSIGN_USER_TO_TODO = gql`
 
 
 describe('Get Todo', () => {
-    it("Receives all Todos", async () => {
-        const todo = await query({query: GET_TODOS})
+    it("Receives users Todos", async () => {
+        const todo = await query({query: GET_TODOS, variables: {limit: 10}})
         expect(todo.data).toHaveProperty("todos")
     })
     it("Receives one todo (LIMIT 1)", async () => {
-        const todo = await query({query: GET_TODOS})
+        const todo = await query({query: GET_TODOS, variables: {limit: 1}})
         expect(todo.data.todos).toHaveLength(1)
     })
 })
@@ -161,6 +169,7 @@ describe('Updates Todo Item', () => {
         const todo = await mutate({mutation: EDIT_TODO, variables: {id: test_id}})
         expect(todo.data.editTodo.id).toEqual(expect.any(String))
     })
+
     it("Updates with wrong ID", async () => {
         const todo = await mutate({mutation: EDIT_TODO, variables: {id: 12}})
         expect(todo.data).toMatchObject(
@@ -171,8 +180,9 @@ describe('Updates Todo Item', () => {
 
 describe('Delete Todo', () => {
     it("deletes Todo", async () => {
-        const todo = await mutate({mutation: DELETE_TODO, variables: {id: test_id}})
-        expect(todo.data).toMatchObject(
+        const todo = await mutate({mutation: CREATE_TODO, variables: {message: "Create todo once"}})
+        const del = await mutate({mutation: DELETE_TODO, variables: {id: todo.data.addTodo.id}})
+        expect(del.data).toMatchObject(
             {"deleteTodo": true}
         )
     })
@@ -206,12 +216,5 @@ describe('Finish Todo', () => {
                 "completed": true
             }
         )
-    })
-})
-
-describe('Assign Todo to User', () => {
-    it("Assigns todo to User", async () => {
-        const todo = await mutate({mutation: ASSIGN_USER_TO_TODO, variables: {user: "milan", id: test_id}})
-        expect(todo.data.assignTodoToUser).toEqual(true)
     })
 })

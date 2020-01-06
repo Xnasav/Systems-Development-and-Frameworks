@@ -110,17 +110,22 @@ const resolvers = {
                 }
                 const createUserCypher = `
                     CREATE (user:User {params})
-                    RETURN user
+                    RETURN user.id, user.login
                 `
                 const session = driver.session()
                 try {
-                    await session.run(createUserCypher, {params})
+                    const data = await session.run(createUserCypher, {params})
+                    const [currentUsr] = await data.records.map(record => ({
+                        id: record.get('user.id'),
+                        login: record.get('user.login')
+
+                    }))
+                    return currentUsr
                 } finally {
                     await session.close()
                 }
-                return true
             }
-            return false;
+            return null;
         },
         deleteUser: async (parent, args, context) => {
             const {driver} = context
@@ -132,7 +137,6 @@ const resolvers = {
             try {
                 await session.run(createUserCypher, {id: context.user.id, login:context.user.login})
             } catch(err) {
-                console.log(err)
                 return false
             } finally {
                 await session.close()
@@ -140,16 +144,18 @@ const resolvers = {
             return true
         },
         deleteTodo: async (parent, args, context) => {
-            if (args.id != null && context.login) {
+            if (args.id != null && context.user.login) {
                 const {driver} = context
                 const deleteTodoCypher = `
-                    MATCH (todo:Todo {id: $id})
-                    DELETE todo
+                    MATCH (todo:Todo {id: $id})-[a:ASSIGNED]->(u:User) WHERE u.id = $uid and u.login=$login
+                    DELETE a, todo
                 `
                 const session = driver.session()
                 try {
-                    await session.run(deleteTodoCypher, {id: args.id})
+                    await session.run(deleteTodoCypher, {id: args.id, uid: context.user.id, login: context.user.login})
                     return true
+                }catch(err) {
+                    console.log(err)
                 } finally {
                     await session.close()
                 }
