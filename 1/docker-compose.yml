@@ -1,0 +1,34 @@
+version: '3.4'
+services:
+  backend:
+    build: backend/.
+    ports:
+      - 4000:4000
+    networks:
+      - pa-network
+    depends_on:
+      - neo4j
+  webapp:
+    build: frontend/.
+    ports:
+      - 8080:80
+    depends_on:
+      - neo4j
+  neo4j:
+    build: neo4j/.
+    ports:
+      - 7687:7687
+      - 7474:7474
+    volumes:
+      - $HOME/neo4j/data:/data
+      - $HOME/neo4j/logs:/logs
+      - $HOME/neo4j/import:/var/lib/neo4j/import
+      - $HOME/neo4j/plugins:/plugins
+    environment:
+      - NEO4J_AUTH=none
+      - NEO4J_dbms_security_procedures_unrestricted=algo.*,apoc.*
+      - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
+    networks:
+      - pa-network
+networks:
+  pa-network:
