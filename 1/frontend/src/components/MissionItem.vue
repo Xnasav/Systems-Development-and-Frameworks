@@ -1,14 +1,14 @@
 <template>
-    <div class="todo-item" v-bind:class="{'is-complete':todo.completed}">
+    <div class="mission-item" v-bind:class="{'is-complete':mission.completed}">
         <div v-if="!isInEditMode">
             <input type="checkbox" v-on:change="markComplete">
-            {{todo.message}}
+            {{mission.message}}
             <button @click="isInEditMode=!isInEditMode" class="edit"> Edit</button>
-            <button @click="$emit('del-todo', todo.id)" class="del"> X</button>
+            <button @click="$emit('del-mission', mission.id)" class="del"> X</button>
         </div>
         <div id="edit" v-else>
-            <form @submit.prevent="editTodo(todo.id, newMessage)">
-                <input type="text" v-model="newMessage" :placeholder="todo.message">
+            <form @submit.prevent="editMission(mission.id, newMessage)">
+                <input type="text" v-model="newMessage" :placeholder="mission.message">
                 <input type="submit" class="edit" value="Save" :disabled="!newMessage">
             </form>
             <button @click="isInEditMode = !isInEditMode" class="edit">Cancel</button>
@@ -18,8 +18,8 @@
 
 <script>
     export default {
-        name: "TodoItem",
-        props: ["todo"],
+        name: "MissionItem",
+        props: ["mission"],
         data() {
             return {
                 isInEditMode: false,
@@ -31,8 +31,8 @@
             markComplete() {
                 this.completed = !this.completed
             },
-            editTodo(id, newMessage) {
-                this.$emit('edit-todo', id, newMessage)
+            editMission(id, newMessage) {
+                this.$emit('edit-mission', id, newMessage)
                 this.isInEditMode = !this.isInEditMode
                 this.newMessage = ""
             }
@@ -41,7 +41,7 @@
 </script>
 
 <style scoped>
-    .todo-item {
+    .mission-item {
         background: #f4f4f4;
         padding: 10px;
         border-bottom: 1px #ccc dotted;

@@ -1,14 +1,14 @@
 <template>
   <div id="app">
     <Header></Header>
-    <AddTodo v-on:addTodo="addTodo"></AddTodo>
-    <Todos v-bind:todos="todos" v-on:del-todo="deleteTodo" v-on:edit-todo="editTodo"/>
+    <AddMission v-on:addMission="addMission"></AddMission>
+    <Missions v-bind:missions="missions" v-on:del-mission="deleteMission" v-on:edit-mission="editMission"/>
   </div>
 </template>
 
 <script>
-import Todos from './components/Todos'
-import AddTodo from './components/AddTodo'
+import Missions from './components/Missions'
+import AddMission from './components/AddMission'
 import Header from './components/layout/Header'
 
 
@@ -16,33 +16,33 @@ export default {
   name: 'app',
   components: {
     Header,
-    Todos,
-    AddTodo
+    Missions,
+    AddMission
   },
   data() {
     return {
-      todos: [
+      missions: [
         { id: '1', message: 'Einkaufen', completed: false},
         { id: '2', message: 'Aufräumen', completed: false},
         { id: '3', message: 'Putzen', completed: false}
       ],
-      nextTodoId: 4
+      nextMissionId: 4
     }
   },
   methods: {
-    addTodo(newTodo) {
-      newTodo.id = this.nextTodoId++
-      this.todos.push(newTodo)
+    addMission(newMission) {
+      newMission.id = this.nextMissionId++
+      this.missions.push(newMission)
     },
-    editTodo(id, newMessage) {
-      this.todos.map(todo => {
-        if(todo.id === id) {
-          todo.message = newMessage
+    editMission(id, newMessage) {
+      this.missions.map(mission => {
+        if(mission.id === id) {
+          mission.message = newMessage
         }
       })
     },
-    deleteTodo(id) {
-      this.todos = this.todos.filter(todo => todo.id != id)
+    deleteMission(id) {
+      this.missions = this.missions.filter(mission => mission.id != id)
     }
   }
 }

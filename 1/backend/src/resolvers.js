@@ -8,54 +8,54 @@ let SECRET_KEY = fs.readFileSync('./src/key/secret.key', 'utf8');
 
 const resolvers = {
     Query: {
-        todos: async (parent, args, context) => {
-            // JSON.parse(JSON.stringify(data.todos))
+        missions: async (parent, args, context) => {
+            // JSON.parse(JSON.stringify(data.missions))
             if (args.limit !== "" && args.limit !== null && args.skip !== "" && args.skip !== null) {
                 const {driver} = context
-                let getTodoCypher
-                getTodoCypher = `
-                    MATCH (todo:Todo)-[:ASSIGNED]->(u:User)
+                let getMissionCypher
+                getMissionCypher = `
+                    MATCH (mission:Mission)-[:ASSIGNED]->(u:Agent)
                     WHERE u.login = $username
-                    RETURN todo.id, todo.message, todo.completed ORDER BY todo.message SKIP $skip LIMIT $limit 
+                    RETURN mission.id, mission.message, mission.completed ORDER BY mission.message SKIP $skip LIMIT $limit 
                 `
 
 
                 const session = driver.session()
                 try {
-                    data = await session.run(getTodoCypher, {
+                    data = await session.run(getMissionCypher, {
                         username: context.user.login,
                         limit: args.limit,
                         skip: args.skip
                     })
-                    const todos = await data.records.map(record => ({
-                        id: record.get('todo.id'),
-                        message: record.get('todo.message'),
-                        completed: record.get('todo.completed')
+                    const missions = await data.records.map(record => ({
+                        id: record.get('mission.id'),
+                        message: record.get('mission.message'),
+                        completed: record.get('mission.completed')
 
                     }))
-                    json_data = JSON.parse(JSON.stringify(todos))
+                    json_data = JSON.parse(JSON.stringify(missions))
                     return json_data
                 } finally {
                     await session.close()
                 }
             }
         },
-        completedTodos: async (parent, args, context) => {
+        completedMissions: async (parent, args, context) => {
             const {driver} = context
-            const getCompletedTodosCypher = `
-                    MATCH (todo:Todo)-[:ASSIGNED]->(u:User) WHERE todo.completed = true AND u.login = $username
-                    RETURN todo.id, todo.message, todo.completed ORDER BY todo.message
+            const getCompletedMissionsCypher = `
+                    MATCH (mission:Mission)-[:ASSIGNED]->(u:Agent) WHERE mission.completed = true AND u.login = $username
+                    RETURN mission.id, mission.message, mission.completed ORDER BY mission.message
              `
             const session = driver.session()
             try {
-                data = await session.run(getCompletedTodosCypher, {username: context.user.login})
-                const todos = await data.records.map(record => ({
-                    id: record.get('todo.id'),
-                    message: record.get('todo.message'),
-                    completed: record.get('todo.completed')
+                data = await session.run(getCompletedMissionsCypher, {username: context.user.login})
+                const missions = await data.records.map(record => ({
+                    id: record.get('mission.id'),
+                    message: record.get('mission.message'),
+                    completed: record.get('mission.completed')
 
                 }))
-                json_data = JSON.parse(JSON.stringify(todos))
+                json_data = JSON.parse(JSON.stringify(missions))
                 return json_data
             } finally {
                 await session.close()
@@ -63,15 +63,15 @@ const resolvers = {
         }
     },
     Mutation: {
-        addTodo: async (parent, args, context) => {
+        addMission: async (parent, args, context) => {
             if (args.message != "" && args.message != null) {
                 const {driver} = context
-                const createTodoCypher = `
-                    CREATE (todo:Todo {params})
-                    RETURN todo.id, todo.message, todo.completed
+                const createMissionCypher = `
+                    CREATE (mission:Mission {params})
+                    RETURN mission.id, mission.message, mission.completed
                 `
                 const assignCypher = `
-                    MATCH (u:User), (t:Todo)
+                    MATCH (u:Agent), (t:Mission)
                     WHERE u.login = $login AND t.id = $id
                     CREATE p=(u)<-[a:ASSIGNED]-(t)
                     RETURN p
@@ -84,23 +84,23 @@ const resolvers = {
                 }
                 const session = driver.session()
                 try {
-                    data = await session.run(createTodoCypher, {params})
-                    const [todo] = await data.records.map(record => ({
-                        id: record.get('todo.id'),
-                        message: record.get('todo.message'),
-                        completed: record.get('todo.completed')
+                    data = await session.run(createMissionCypher, {params})
+                    const [mission] = await data.records.map(record => ({
+                        id: record.get('mission.id'),
+                        message: record.get('mission.message'),
+                        completed: record.get('mission.completed')
 
                     }))
 
-                    await session.run(assignCypher, {login: context.user.login, id: todo.id})
-                    return todo;
+                    await session.run(assignCypher, {login: context.user.login, id: mission.id})
+                    return mission;
                 } finally {
                     await session.close()
                 }
             }
             return;
         },
-        addUser: async (parent, args, context) => {
+        addAgent: async (parent, args, context) => {
             if (args.login != "" && args.login != null && args.password != "" && args.password != null) {
                 const {driver} = context
                 const params = {
@@ -108,13 +108,13 @@ const resolvers = {
                     login: args.login,
                     password: args.password
                 }
-                const createUserCypher = `
-                    CREATE (user:User {params})
+                const createAgentCypher = `
+                    CREATE (user:Agent {params})
                     RETURN user.id, user.login
                 `
                 const session = driver.session()
                 try {
-                    const data = await session.run(createUserCypher, {params})
+                    const data = await session.run(createAgentCypher, {params})
                     const [currentUsr] = await data.records.map(record => ({
                         id: record.get('user.id'),
                         login: record.get('user.login')
@@ -127,16 +127,16 @@ const resolvers = {
             }
             return null;
         },
-        deleteUser: async (parent, args, context) => {
+        deleteAgent: async (parent, args, context) => {
             const {driver} = context
-            const createUserCypher = `
-                MATCH (u:User {id: $id, login: $login})
-                OPTIONAL MATCH (u)<-[a:ASSIGNED]-(Todo) 
+            const createAgentCypher = `
+                MATCH (u:Agent {id: $id, login: $login})
+                OPTIONAL MATCH (u)<-[a:ASSIGNED]-(Mission) 
                 DELETE a, u
             `
             const session = driver.session()
             try {
-                await session.run(createUserCypher, {id: context.user.id, login:context.user.login})
+                await session.run(createAgentCypher, {id: context.user.id, login:context.user.login})
             } catch(err) {
                 return false
             } finally {
@@ -144,16 +144,16 @@ const resolvers = {
             }
             return true
         },
-        deleteTodo: async (parent, args, context) => {
+        deleteMission: async (parent, args, context) => {
             if (args.id != null && context.user.login) {
                 const {driver} = context
-                const deleteTodoCypher = `
-                    MATCH (todo:Todo {id: $id})-[a:ASSIGNED]->(u:User) WHERE u.id = $uid and u.login=$login
-                    DELETE a, todo
+                const deleteMissionCypher = `
+                    MATCH (mission:Mission {id: $id})-[a:ASSIGNED]->(u:Agent) WHERE u.id = $uid and u.login=$login
+                    DELETE a, mission
                 `
                 const session = driver.session()
                 try {
-                    await session.run(deleteTodoCypher, {id: args.id, uid: context.user.id, login: context.user.login})
+                    await session.run(deleteMissionCypher, {id: args.id, uid: context.user.id, login: context.user.login})
                     return true
                 }catch(err) {
                     console.log(err)
@@ -163,21 +163,21 @@ const resolvers = {
                 return false
             }
         },
-        editTodo: async (parent, args, context) => {
+        editMission: async (parent, args, context) => {
             if (args.id != null && args.message != null) {
                 const {driver} = context
-                const editTodoCypher = `
-                    MATCH (todo:Todo {id: $id})-[:ASSIGNED]->(user:User {id: $uid})
-                    SET todo.message = $message
-                    RETURN todo.id, todo.message, todo.completed
+                const editMissionCypher = `
+                    MATCH (mission:Mission {id: $id})-[:ASSIGNED]->(user:Agent {id: $uid})
+                    SET mission.message = $message
+                    RETURN mission.id, mission.message, mission.completed
                 `
                 const session = driver.session()
                 try {
-                    const _response = await session.run(editTodoCypher, {id: args.id, message: args.message, uid:context.user.id})
+                    const _response = await session.run(editMissionCypher, {id: args.id, message: args.message, uid:context.user.id})
                     const [response] = await _response.records.map(record => ({
-                        id: record.get('todo.id'),
-                        message: record.get('todo.message'),
-                        completed: record.get('todo.completed')
+                        id: record.get('mission.id'),
+                        message: record.get('mission.message'),
+                        completed: record.get('mission.completed')
                     }))
                     if (response) {
                         return response
@@ -190,11 +190,11 @@ const resolvers = {
             }
 
         },
-        assignTodoToUser: async (parent, args, context) => {
+        assignMissionToAgent: async (parent, args, context) => {
             if (args.id != null && args.user != null) {
                 const {driver} = context
                 const assignCypher = `
-                    MATCH (u:User), (t:Todo)
+                    MATCH (u:Agent), (t:Mission)
                     WHERE u.login = $login AND t.id = $id
                     CREATE p=(u)<-[a:ASSIGNED]-(t)
                     RETURN p
@@ -208,21 +208,21 @@ const resolvers = {
                 }
             }
         },
-        finishTodo: async (parent, args, context) => {
+        finishMission: async (parent, args, context) => {
             if (args.id != null) {
                 const {driver} = context
-                const finishTodoCypher = `
-                MATCH (todo:Todo {id: $id})-[:ASSIGNED]->(user:User {id: $uid})
-                SET todo.completed = True
-                RETURN todo.id, todo.message, todo.completed
+                const finishMissionCypher = `
+                MATCH (mission:Mission {id: $id})-[:ASSIGNED]->(user:Agent {id: $uid})
+                SET mission.completed = True
+                RETURN mission.id, mission.message, mission.completed
                 `
                 const session = driver.session()
                 try {
-                    const _response = await session.run(finishTodoCypher, {id: args.id, uid:context.user.id})
+                    const _response = await session.run(finishMissionCypher, {id: args.id, uid:context.user.id})
                     const [response] = await _response.records.map(record => ({
-                        id: record.get('todo.id'),
-                        message: record.get('todo.message'),
-                        completed: record.get('todo.completed')
+                        id: record.get('mission.id'),
+                        message: record.get('mission.message'),
+                        completed: record.get('mission.completed')
                     }))
                     if (response) {
                         return response
@@ -238,13 +238,13 @@ const resolvers = {
             if (args.usr != null && args.pwd != null) {
                 let user
                 const {driver} = context
-                const getUserCypher = `
-                MATCH (user:User {login: $login, password: $password})
+                const getAgentCypher = `
+                MATCH (user:Agent {login: $login, password: $password})
                 RETURN user.id, user.login, user.password
                 `
                 const session = driver.session()
                 try {
-                    user = await session.run(getUserCypher, {login: args.usr, password: args.pwd})
+                    user = await session.run(getAgentCypher, {login: args.usr, password: args.pwd})
 
                 } finally {
                     await session.close()

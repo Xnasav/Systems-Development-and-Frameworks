@@ -1,7 +1,7 @@
 <template>
     <div>
-        <form @submit.prevent="addTodo">
-            <input type="text" v-model="message" name="title" placeholder="Add Todo...">
+        <form @submit.prevent="addMission">
+            <input type="text" v-model="message" name="title" placeholder="Add Mission...">
             <input type="submit" value="Add" class="btn" :disabled="!message">
         </form>
     </div>
@@ -9,19 +9,19 @@
 
 <script>
     export default {
-        name: "AddTodo",
+        name: "AddMission",
         data() {
             return {
                 message: ''
             }
         },
         methods: {
-            addTodo() {
-                const newTodo = {
+            addMission() {
+                const newMission = {
                     message: this.message,
                     completed: false
                 }
-                this.$emit('addTodo', newTodo)
+                this.$emit('addMission', newMission)
                 this.message = ""
             }
         }

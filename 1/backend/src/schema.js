@@ -2,17 +2,17 @@ const { gql } = require('apollo-server');
 	
 const typeDefs = gql`
 type Query {
-  todos(limit: Int!, skip: Int!): [Todo],
-  completedTodos: [Todo]
+  missions(limit: Int!, skip: Int!): [Mission],
+  completedMissions: [Mission]
 }
 
-type Todo {
+type Mission {
 	id: ID!
 	message: String!
 	completed: Boolean!
 }
 
-type User {
+type Agent {
     id: String!
     login: String!
     password: String!
@@ -20,14 +20,14 @@ type User {
 
 
 type Mutation {
-	addTodo(message: String!): Todo
-	addUser(login: String!, password: String!): User
-	deleteUser: Boolean
-	finishTodo(id: ID!): Todo
-	deleteTodo(id: ID!): Boolean
-	editTodo(id: ID!, message: String!): Todo
-	finishWithMerge(id: ID!): Todo
-	assignTodoToUser(user: String!, id: ID!): Boolean
+	addMission(message: String!): Mission
+	addAgent(login: String!, password: String!): Agent
+	deleteAgent: Boolean
+	finishMission(id: ID!): Mission
+	deleteMission(id: ID!): Boolean
+	editMission(id: ID!, message: String!): Mission
+	finishWithMerge(id: ID!): Mission
+	assignMissionToAgent(user: String!, id: ID!): Boolean
 	login(usr: String!, pwd: String!): String
 }		
 `;

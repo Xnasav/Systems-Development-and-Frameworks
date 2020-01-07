@@ -1,4 +1,4 @@
-const todos = [
+const missions = [
     {
         id: 1,
         message: 'Einkaufen',
@@ -31,4 +31,4 @@ const user = [
 ]
 
 
-module.exports = {todos, user};
+module.exports = {missions, user};

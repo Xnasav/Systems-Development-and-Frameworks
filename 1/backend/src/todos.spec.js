@@ -24,15 +24,15 @@ const isAuthenticated = rule({ cache: 'contextual' })(
 
 const permissions = shield({
     Query: {
-        todos: isAuthenticated,
-        completedTodos: isAuthenticated
+        missions: isAuthenticated,
+        completedMissions: isAuthenticated
     },
     Mutation: {
-        addTodo: isAuthenticated,
-        deleteUser: isAuthenticated,
-        finishTodo: isAuthenticated,
-        deleteTodo: isAuthenticated,
-        editTodo: isAuthenticated,
+        addMission: isAuthenticated,
+        deleteAgent: isAuthenticated,
+        finishMission: isAuthenticated,
+        deleteMission: isAuthenticated,
+        editMission: isAuthenticated,
     }
 })
 
@@ -64,243 +64,243 @@ beforeEach(async () => {
     user = null
 })
 
-const GET_TODOS = gql`
-query AllTodos($limit: Int!){
-  todos(limit: $limit, skip: 0){
+const GET_MISSIONS = gql`
+query AllMissions($limit: Int!){
+  missions(limit: $limit, skip: 0){
     message
     completed
     id
   }
 }`;
 
-const GET_COMPLETED_TODOS = gql`
-query CompletedTodos{
-  completedTodos{
+const GET_COMPLETED_MISSIONS = gql`
+query CompletedMissions{
+  completedMissions{
     message
     completed
     id
   }
 }`;
 
-const CREATE_TODO = gql`
-	mutation CreateTodo($message: String!){
-		addTodo(message: $message) {
+const CREATE_MISSION = gql`
+	mutation CreateMission($message: String!){
+		addMission(message: $message) {
 			id,
             message,
 			completed
         }
     }`;
 
-const EDIT_TODO = gql`
-	mutation EditTodo($id: ID!){
-   		editTodo(id: $id, message: "Tests zweimal implementieren"){
+const EDIT_MISSION = gql`
+	mutation EditMission($id: ID!){
+   		editMission(id: $id, message: "Tests zweimal implementieren"){
    		id,
      	message,
      	completed
    		}
     }`;
 
-const DELETE_TODO = gql`
-	mutation DeleteTodo($id: ID!){
-   		deleteTodo(id: $id)
+const DELETE_MISSION = gql`
+	mutation DeleteMission($id: ID!){
+   		deleteMission(id: $id)
     }`;
 
-const FINISH_TODO = gql`
-	mutation FinishTodo($id: ID!){
-   		finishTodo(id: $id) {
+const FINISH_MISSION = gql`
+	mutation FinishMission($id: ID!){
+   		finishMission(id: $id) {
    		    id,
    		    message,
    		    completed
    		}
     }`;
 
-const ADD_USER = gql`
-	mutation AddUser{
-		addUser(login: "milan", password: "password") {
+const ADD_AGENT = gql`
+	mutation AddAgent{
+		addAgent(login: "milan", password: "password") {
 		id,
 		login
 		}
     }`;
 
-const DELETE_USER = gql`
-	mutation DeleteUser{
-		deleteUser
+const DELETE_AGENT = gql`
+	mutation DeleteAgent{
+		deleteAgent
     }`;
 
 
-describe('Get Todo', () => {
+describe('Get Mission', () => {
     beforeEach(async () => {
-        const user_tmp = await mutate({mutation: ADD_USER})
+        const user_tmp = await mutate({mutation: ADD_AGENT})
         user = {
-            id: user_tmp.data.addUser.id,
-            login: user_tmp.data.addUser.login
+            id: user_tmp.data.addAgent.id,
+            login: user_tmp.data.addAgent.login
         }
-        const todo = await mutate({mutation: CREATE_TODO, variables: {message: "Test"}})
-        test_id = todo.data.addTodo.id
+        const mission = await mutate({mutation: CREATE_MISSION, variables: {message: "Test"}})
+        test_id = mission.data.addMission.id
     })
 
-    it("Receives users Todos", async () => {
-        const todo = await query({query: GET_TODOS, variables: {limit: 10}})
-        expect(todo.data).toHaveProperty("todos")
+    it("Receives agents Missions", async () => {
+        const mission = await query({query: GET_MISSIONS, variables: {limit: 10}})
+        expect(mission.data).toHaveProperty("missions")
     })
-    it("Receives one todo (LIMIT 1)", async () => {
-        const todo = await query({query: GET_TODOS, variables: {limit: 1}})
-        expect(todo.data.todos).toHaveLength(1)
+    it("Receives one mission (LIMIT 1)", async () => {
+        const mission = await query({query: GET_MISSIONS, variables: {limit: 1}})
+        expect(mission.data.missions).toHaveLength(1)
     })
 
     afterEach(async () => {
-        await mutate({mutation: DELETE_TODO, variables: {id: test_id}})
-        await mutate({mutation: DELETE_USER})
+        await mutate({mutation: DELETE_MISSION, variables: {id: test_id}})
+        await mutate({mutation: DELETE_AGENT})
     })
 
 })
 
-describe('Get Todos unauthorized', () => {
-    it("Receives todos unauthenticated", async () => {
-        const todo = await query({query: GET_TODOS, variables: {limit: 10}})
-        expect(todo.errors[0]).toHaveProperty('message', 'Not Authorised!')
+describe('Get Missions unauthorized', () => {
+    it("Receives missions unauthenticated", async () => {
+        const mission = await query({query: GET_MISSIONS, variables: {limit: 10}})
+        expect(mission.errors[0]).toHaveProperty('message', 'Not Authorised!')
     })
 })
 
-describe('Get completed todos only (DESC)', () => {
-    let todo
+describe('Get completed missions only (DESC)', () => {
+    let mission
 
     beforeEach(async () => {
-        const user_tmp = await mutate({mutation: ADD_USER})
+        const user_tmp = await mutate({mutation: ADD_AGENT})
         user = {
-            id: user_tmp.data.addUser.id,
-            login: user_tmp.data.addUser.login
+            id: user_tmp.data.addAgent.id,
+            login: user_tmp.data.addAgent.login
         }
     })
 
-    it("Receives all completed todos", async () => {
-        const todo_c = await mutate({mutation: CREATE_TODO, variables: {message: "c"}})
-        const todo_a = await mutate({mutation: CREATE_TODO, variables: {message: "a"}})
-        const todo_b = await mutate({mutation: CREATE_TODO, variables: {message: "b"}})
+    it("Receives all completed missions", async () => {
+        const mission_c = await mutate({mutation: CREATE_MISSION, variables: {message: "c"}})
+        const mission_a = await mutate({mutation: CREATE_MISSION, variables: {message: "a"}})
+        const mission_b = await mutate({mutation: CREATE_MISSION, variables: {message: "b"}})
 
-        await mutate({mutation: FINISH_TODO, variables: {id: todo_c.data.addTodo.id}})
-        await mutate({mutation: FINISH_TODO, variables: {id: todo_a.data.addTodo.id}})
-        await mutate({mutation: FINISH_TODO, variables: {id: todo_b.data.addTodo.id}})
+        await mutate({mutation: FINISH_MISSION, variables: {id: mission_c.data.addMission.id}})
+        await mutate({mutation: FINISH_MISSION, variables: {id: mission_a.data.addMission.id}})
+        await mutate({mutation: FINISH_MISSION, variables: {id: mission_b.data.addMission.id}})
 
-        todo = await query({query: GET_COMPLETED_TODOS})
-        expect(todo.data.completedTodos[0].completed).toEqual(true)
-        expect(todo.data.completedTodos[1].completed).toEqual(true)
-        expect(todo.data.completedTodos[2].completed).toEqual(true)
+        mission = await query({query: GET_COMPLETED_MISSIONS})
+        expect(mission.data.completedMissions[0].completed).toEqual(true)
+        expect(mission.data.completedMissions[1].completed).toEqual(true)
+        expect(mission.data.completedMissions[2].completed).toEqual(true)
 
-        await mutate({mutation: DELETE_TODO, variables: {id: todo_c.data.addTodo.id}})
-        await mutate({mutation: DELETE_TODO, variables: {id: todo_a.data.addTodo.id}})
-        await mutate({mutation: DELETE_TODO, variables: {id: todo_b.data.addTodo.id}})
+        await mutate({mutation: DELETE_MISSION, variables: {id: mission_c.data.addMission.id}})
+        await mutate({mutation: DELETE_MISSION, variables: {id: mission_a.data.addMission.id}})
+        await mutate({mutation: DELETE_MISSION, variables: {id: mission_b.data.addMission.id}})
 
     })
     afterEach(async () => {
-        await mutate({mutation: DELETE_USER})
+        await mutate({mutation: DELETE_AGENT})
     })
 
 })
 
 
-describe('Create Todo Item', () => {
+describe('Create Mission Item', () => {
     beforeEach(async () => {
-        const user_tmp = await mutate({mutation: ADD_USER})
+        const user_tmp = await mutate({mutation: ADD_AGENT})
         user = {
-            id: user_tmp.data.addUser.id,
-            login: user_tmp.data.addUser.login
+            id: user_tmp.data.addAgent.id,
+            login: user_tmp.data.addAgent.login
         }
     })
 
-    it("Creates a new Todo", async () => {
-        const todo = await mutate({mutation: CREATE_TODO, variables: {message: "test"}})
-        expect(todo.data.addTodo.id).toEqual(expect.any(String))
-        await mutate({mutation: DELETE_TODO, variables: {id: todo.data.addTodo.id}})
+    it("Creates a new Mission", async () => {
+        const mission = await mutate({mutation: CREATE_MISSION, variables: {message: "test"}})
+        expect(mission.data.addMission.id).toEqual(expect.any(String))
+        await mutate({mutation: DELETE_MISSION, variables: {id: mission.data.addMission.id}})
     })
 
     afterEach(async () => {
-        await mutate({mutation: DELETE_USER})
+        await mutate({mutation: DELETE_AGENT})
     })
 })
 
-describe('Updates Todo Item', () => {
+describe('Updates Mission Item', () => {
     beforeEach(async () => {
-        const user_tmp = await mutate({mutation: ADD_USER})
+        const user_tmp = await mutate({mutation: ADD_AGENT})
         user = {
-            id: user_tmp.data.addUser.id,
-            login: user_tmp.data.addUser.login
+            id: user_tmp.data.addAgent.id,
+            login: user_tmp.data.addAgent.login
         }
-        const todo = await mutate({mutation: CREATE_TODO, variables: {message: "Test"}})
-        test_id = todo.data.addTodo.id
+        const mission = await mutate({mutation: CREATE_MISSION, variables: {message: "Test"}})
+        test_id = mission.data.addMission.id
     })
 
-    it("Update a new Todo", async () => {
-        const todo = await mutate({mutation: EDIT_TODO, variables: {id: test_id}})
-        expect(todo.data.editTodo.id).toEqual(expect.any(String))
+    it("Update a new Mission", async () => {
+        const mission = await mutate({mutation: EDIT_MISSION, variables: {id: test_id}})
+        expect(mission.data.editMission.id).toEqual(expect.any(String))
     })
 
     it("Updates with wrong ID", async () => {
-        const todo = await mutate({mutation: EDIT_TODO, variables: {id: 12}})
-        expect(todo.data).toMatchObject(
-            {"editTodo": null}
+        const mission = await mutate({mutation: EDIT_MISSION, variables: {id: 12}})
+        expect(mission.data).toMatchObject(
+            {"editMission": null}
         )
     })
     afterEach(async () => {
-        await mutate({mutation: DELETE_TODO, variables: {id: test_id}})
-        await mutate({mutation: DELETE_USER})
+        await mutate({mutation: DELETE_MISSION, variables: {id: test_id}})
+        await mutate({mutation: DELETE_AGENT})
     })
 })
 
-describe('Delete Todo', () => {
+describe('Delete Mission', () => {
     beforeEach(async () => {
-        const user_tmp = await mutate({mutation: ADD_USER})
+        const user_tmp = await mutate({mutation: ADD_AGENT})
         user = {
-            id: user_tmp.data.addUser.id,
-            login: user_tmp.data.addUser.login
+            id: user_tmp.data.addAgent.id,
+            login: user_tmp.data.addAgent.login
         }
     })
 
-    it("deletes Todo", async () => {
-        const todo = await mutate({mutation: CREATE_TODO, variables: {message: "Create todo once"}})
-        const del = await mutate({mutation: DELETE_TODO, variables: {id: todo.data.addTodo.id}})
+    it("deletes Mission", async () => {
+        const mission = await mutate({mutation: CREATE_MISSION, variables: {message: "Create mission once"}})
+        const del = await mutate({mutation: DELETE_MISSION, variables: {id: mission.data.addMission.id}})
         expect(del.data).toMatchObject(
-            {"deleteTodo": true}
+            {"deleteMission": true}
         )
     })
-    it("deletes Todo with wrong ID", async () => {
-        const todo = await mutate({mutation: DELETE_TODO, variables: {id: 12}})
-        expect(todo.data).toMatchObject(
-            {"deleteTodo": true}
+    it("deletes Mission with wrong ID", async () => {
+        const mission = await mutate({mutation: DELETE_MISSION, variables: {id: 12}})
+        expect(mission.data).toMatchObject(
+            {"deleteMission": true}
         )
     })
 
     afterEach(async () => {
-        await mutate({mutation: DELETE_USER})
+        await mutate({mutation: DELETE_AGENT})
     })
 })
 
-describe('Finish Todo', () => {
+describe('Finish Mission', () => {
     beforeEach(async () => {
-        const user_tmp = await mutate({mutation: ADD_USER})
+        const user_tmp = await mutate({mutation: ADD_AGENT})
         user = {
-            id: user_tmp.data.addUser.id,
-            login: user_tmp.data.addUser.login
+            id: user_tmp.data.addAgent.id,
+            login: user_tmp.data.addAgent.login
         }
-        const todo = await mutate({mutation: CREATE_TODO, variables: {message: "Test"}})
-        test_id = todo.data.addTodo.id
+        const mission = await mutate({mutation: CREATE_MISSION, variables: {message: "Test"}})
+        test_id = mission.data.addMission.id
     })
 
-    it("finishes Todo", async () => {
-        const todo = await mutate({mutation: FINISH_TODO, variables: {id: test_id}})
-        expect(todo.data.finishTodo.id).toEqual(expect.any(String))
+    it("finishes Mission", async () => {
+        const mission = await mutate({mutation: FINISH_MISSION, variables: {id: test_id}})
+        expect(mission.data.finishMission.id).toEqual(expect.any(String))
     })
-    it("finishes Todo with wrong ID", async () => {
-        const todo = await mutate({mutation: FINISH_TODO, variables: {id: 4}})
-        expect(todo.data).toMatchObject(
+    it("finishes Mission with wrong ID", async () => {
+        const mission = await mutate({mutation: FINISH_MISSION, variables: {id: 4}})
+        expect(mission.data).toMatchObject(
             {
-                "finishTodo": null
+                "finishMission": null
             }
         )
     })
     afterEach(async () => {
-        await mutate({mutation: DELETE_TODO, variables: {id: test_id}})
-        await mutate({mutation: DELETE_USER})
+        await mutate({mutation: DELETE_MISSION, variables: {id: test_id}})
+        await mutate({mutation: DELETE_AGENT})
     })
 
 })

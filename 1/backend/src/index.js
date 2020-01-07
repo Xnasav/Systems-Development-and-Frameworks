@@ -26,15 +26,15 @@ const isAuthenticated = rule({ cache: 'contextual' })(
 
 const permissions = shield({
   Query: {
-    todos: isAuthenticated,
-    completedTodos: isAuthenticated
+    missions: isAuthenticated,
+    completedMissions: isAuthenticated
   },
   Mutation: {
-    addTodo: isAuthenticated,
-    deleteUser: isAuthenticated,
-    finishTodo: isAuthenticated,
-    deleteTodo: isAuthenticated,
-    editTodo: isAuthenticated,
+    addMission: isAuthenticated,
+    deleteAgent: isAuthenticated,
+    finishMission: isAuthenticated,
+    deleteMission: isAuthenticated,
+    editMission: isAuthenticated,
   }
 })
 
@@ -64,24 +64,24 @@ const server = new ApolloServer({
       token = null
     }
     const session = driver.session()
-    const getUserCypher = `
-    MATCH (user:User {id: $id})
+    const getAgentCypher = `
+    MATCH (user:Agent {id: $id})
     RETURN user {.id, .login}
     LIMIT 1
   `
-    const result = await session.run(getUserCypher, { id: id })
+    const result = await session.run(getAgentCypher, { id: id })
     await session.close()
-    let [currentUser] = await result.records.map(record => {
+    let [currentAgent] = await result.records.map(record => {
       return record.get('user')
     })
-    if (!currentUser){
-      currentUser = null
+    if (!currentAgent){
+      currentAgent = null
     } else {
-      currentUser = {user: currentUser}
+      currentAgent = {user: currentAgent}
     }
     return {
       driver,
-      ...currentUser
+      ...currentAgent
     }
   }
 });

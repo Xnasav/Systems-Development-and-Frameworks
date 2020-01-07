@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-NEO4J_USERNAME=neo4j
+NEO4J_AGENTNAME=neo4j
 NEO4J_PASSWORD=password
 
-if [ -z "$NEO4J_USERNAME" ] || [ -z "$NEO4J_PASSWORD" ]; then
-  echo "Please set NEO4J_USERNAME and NEO4J_PASSWORD environment variables."
+if [ -z "$NEO4J_AGENTNAME" ] || [ -z "$NEO4J_PASSWORD" ]; then
+  echo "Please set NEO4J_AGENTNAME and NEO4J_PASSWORD environment variables."
   echo "Setting up database constraints and indexes will probably fail because of authentication errors."
   echo "E.g. you could \`cp .env.template .env\` unless you run the script in a docker container"
 fi
@@ -21,9 +21,9 @@ CALL db.indexes();
 ' | cypher-shell
 
 echo '
-CREATE CONSTRAINT ON (t:Todo)       ASSERT t.id IS UNIQUE;
-CREATE CONSTRAINT ON (u:User)       ASSERT u.id IS UNIQUE;
-CREATE CONSTRAINT ON (u:User)       ASSERT u.login IS UNIQUE;
+CREATE CONSTRAINT ON (t:Mission)       ASSERT t.id IS UNIQUE;
+CREATE CONSTRAINT ON (u:Agent)       ASSERT u.id IS UNIQUE;
+CREATE CONSTRAINT ON (u:Agent)       ASSERT u.login IS UNIQUE;
 ' | cypher-shell
 
 echo '
