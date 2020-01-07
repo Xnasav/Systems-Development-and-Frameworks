@@ -4,19 +4,53 @@ const {createTestClient} = require('apollo-server-testing');
 const typeDefs = require('./schema.js');
 const resolvers = require('./resolvers.js');
 const {getDriver} = require('./neo4j.js')
+const { rule, shield, and, or, not } = require('graphql-shield')
+const { applyMiddleware } = require('graphql-middleware')
+const { makeExecutableSchema } = require("graphql-tools");
 
 let query, mutate, test_id, user
 
 const driver = getDriver()
 
+const isAuthenticated = rule({ cache: 'contextual' })(
+    async (parent, args, ctx, info) => {
+        if(ctx.user) {
+            return true
+        } else {
+            return false
+        }
+    },
+)
+
+const permissions = shield({
+    Query: {
+        todos: isAuthenticated,
+        completedTodos: isAuthenticated
+    },
+    Mutation: {
+        addTodo: isAuthenticated,
+        deleteUser: isAuthenticated,
+        finishTodo: isAuthenticated,
+        deleteTodo: isAuthenticated,
+        editTodo: isAuthenticated,
+    }
+})
+
+const schema = applyMiddleware(
+    makeExecutableSchema({
+        typeDefs,
+        resolvers
+    }),
+    permissions,
+);
+
 beforeAll(async () => {
     const server = new ApolloServer({
-        typeDefs,
-        resolvers,
-        context: () => {
+        schema,
+        context: async ({ req}) => {
             return {
-                user: user,
-                driver
+                driver,
+                user: user
             }
         }
     });
@@ -26,20 +60,8 @@ beforeAll(async () => {
     query = client.query
 })
 
-beforeEach(async() => {
-    const user_tmp = await mutate({mutation: ADD_USER})
-    console.log(user_tmp)
-    user = {
-        id: user_tmp.data.addUser.id,
-        login: user_tmp.data.addUser.login
-    }
-    const todo = await mutate({mutation: CREATE_TODO, variables: {message: "Test"}})
-    test_id = todo.data.addTodo.id
-})
-
-afterEach(async () => {
-    await mutate({mutation: DELETE_USER})
-    await mutate({mutation: DELETE_TODO, variables: {id: test_id}})
+beforeEach(async () => {
+    user = null
 })
 
 const GET_TODOS = gql`
@@ -78,15 +100,6 @@ const EDIT_TODO = gql`
    		}
     }`;
 
-const FINISH_TODO_MERGE = gql`
-	mutation MergeTodo($id: ID!){
-   		finishWithMerge(id: $id){
-   		id,
-     	message,
-     	completed
-   		}
-    }`;
-
 const DELETE_TODO = gql`
 	mutation DeleteTodo($id: ID!){
    		deleteTodo(id: $id)
@@ -114,14 +127,18 @@ const DELETE_USER = gql`
 		deleteUser
     }`;
 
-const ASSIGN_USER_TO_TODO = gql`
-	mutation Assign($user: String!, $id: ID!){
-   		assignTodoToUser(user: $user, id: $id) 
-    }`;
-
-
 
 describe('Get Todo', () => {
+    beforeEach(async () => {
+        const user_tmp = await mutate({mutation: ADD_USER})
+        user = {
+            id: user_tmp.data.addUser.id,
+            login: user_tmp.data.addUser.login
+        }
+        const todo = await mutate({mutation: CREATE_TODO, variables: {message: "Test"}})
+        test_id = todo.data.addTodo.id
+    })
+
     it("Receives users Todos", async () => {
         const todo = await query({query: GET_TODOS, variables: {limit: 10}})
         expect(todo.data).toHaveProperty("todos")
@@ -130,11 +147,33 @@ describe('Get Todo', () => {
         const todo = await query({query: GET_TODOS, variables: {limit: 1}})
         expect(todo.data.todos).toHaveLength(1)
     })
+
+    afterEach(async () => {
+        await mutate({mutation: DELETE_TODO, variables: {id: test_id}})
+        await mutate({mutation: DELETE_USER})
+    })
+
 })
 
-describe('Get completed todos only (DESC)', () =>{
+describe('Get Todos unauthorized', () => {
+    it("Receives todos unauthenticated", async () => {
+        const todo = await query({query: GET_TODOS, variables: {limit: 10}})
+        expect(todo.errors[0]).toHaveProperty('message', 'Not Authorised!')
+    })
+})
+
+describe('Get completed todos only (DESC)', () => {
     let todo
-    it("Receives all completed todos", async() => {
+
+    beforeEach(async () => {
+        const user_tmp = await mutate({mutation: ADD_USER})
+        user = {
+            id: user_tmp.data.addUser.id,
+            login: user_tmp.data.addUser.login
+        }
+    })
+
+    it("Receives all completed todos", async () => {
         const todo_c = await mutate({mutation: CREATE_TODO, variables: {message: "c"}})
         const todo_a = await mutate({mutation: CREATE_TODO, variables: {message: "a"}})
         const todo_b = await mutate({mutation: CREATE_TODO, variables: {message: "b"}})
@@ -153,18 +192,44 @@ describe('Get completed todos only (DESC)', () =>{
         await mutate({mutation: DELETE_TODO, variables: {id: todo_b.data.addTodo.id}})
 
     })
+    afterEach(async () => {
+        await mutate({mutation: DELETE_USER})
+    })
+
 })
 
 
 describe('Create Todo Item', () => {
+    beforeEach(async () => {
+        const user_tmp = await mutate({mutation: ADD_USER})
+        user = {
+            id: user_tmp.data.addUser.id,
+            login: user_tmp.data.addUser.login
+        }
+    })
+
     it("Creates a new Todo", async () => {
         const todo = await mutate({mutation: CREATE_TODO, variables: {message: "test"}})
         expect(todo.data.addTodo.id).toEqual(expect.any(String))
         await mutate({mutation: DELETE_TODO, variables: {id: todo.data.addTodo.id}})
     })
+
+    afterEach(async () => {
+        await mutate({mutation: DELETE_USER})
+    })
 })
 
 describe('Updates Todo Item', () => {
+    beforeEach(async () => {
+        const user_tmp = await mutate({mutation: ADD_USER})
+        user = {
+            id: user_tmp.data.addUser.id,
+            login: user_tmp.data.addUser.login
+        }
+        const todo = await mutate({mutation: CREATE_TODO, variables: {message: "Test"}})
+        test_id = todo.data.addTodo.id
+    })
+
     it("Update a new Todo", async () => {
         const todo = await mutate({mutation: EDIT_TODO, variables: {id: test_id}})
         expect(todo.data.editTodo.id).toEqual(expect.any(String))
@@ -176,9 +241,21 @@ describe('Updates Todo Item', () => {
             {"editTodo": null}
         )
     })
+    afterEach(async () => {
+        await mutate({mutation: DELETE_TODO, variables: {id: test_id}})
+        await mutate({mutation: DELETE_USER})
+    })
 })
 
 describe('Delete Todo', () => {
+    beforeEach(async () => {
+        const user_tmp = await mutate({mutation: ADD_USER})
+        user = {
+            id: user_tmp.data.addUser.id,
+            login: user_tmp.data.addUser.login
+        }
+    })
+
     it("deletes Todo", async () => {
         const todo = await mutate({mutation: CREATE_TODO, variables: {message: "Create todo once"}})
         const del = await mutate({mutation: DELETE_TODO, variables: {id: todo.data.addTodo.id}})
@@ -192,9 +269,23 @@ describe('Delete Todo', () => {
             {"deleteTodo": true}
         )
     })
+
+    afterEach(async () => {
+        await mutate({mutation: DELETE_USER})
+    })
 })
 
 describe('Finish Todo', () => {
+    beforeEach(async () => {
+        const user_tmp = await mutate({mutation: ADD_USER})
+        user = {
+            id: user_tmp.data.addUser.id,
+            login: user_tmp.data.addUser.login
+        }
+        const todo = await mutate({mutation: CREATE_TODO, variables: {message: "Test"}})
+        test_id = todo.data.addTodo.id
+    })
+
     it("finishes Todo", async () => {
         const todo = await mutate({mutation: FINISH_TODO, variables: {id: test_id}})
         expect(todo.data.finishTodo.id).toEqual(expect.any(String))
@@ -207,14 +298,9 @@ describe('Finish Todo', () => {
             }
         )
     })
-    it("Finishes with Merge", async () => {
-        const todo = await mutate({mutation: FINISH_TODO_MERGE, variables: {id: test_id}})
-        expect(todo.data.finishWithMerge).toMatchObject(
-            {
-                "id": test_id,
-                "message": "Test",
-                "completed": true
-            }
-        )
+    afterEach(async () => {
+        await mutate({mutation: DELETE_TODO, variables: {id: test_id}})
+        await mutate({mutation: DELETE_USER})
     })
+
 })

@@ -130,7 +130,8 @@ const resolvers = {
         deleteUser: async (parent, args, context) => {
             const {driver} = context
             const createUserCypher = `
-                MATCH (u:User)<-[a:ASSIGNED]-(Todo) WHERE u.id = $id and u.login=$login
+                MATCH (u:User {id: $id, login: $login})
+                OPTIONAL MATCH (u)<-[a:ASSIGNED]-(Todo) 
                 DELETE a, u
             `
             const session = driver.session()
@@ -166,40 +167,13 @@ const resolvers = {
             if (args.id != null && args.message != null) {
                 const {driver} = context
                 const editTodoCypher = `
-                    MATCH (todo:Todo {id: $id})
+                    MATCH (todo:Todo {id: $id})-[:ASSIGNED]->(user:User {id: $uid})
                     SET todo.message = $message
                     RETURN todo.id, todo.message, todo.completed
                 `
                 const session = driver.session()
                 try {
-                    const _response = await session.run(editTodoCypher, {id: args.id, message: args.message})
-                    const [response] = await _response.records.map(record => ({
-                        id: record.get('todo.id'),
-                        message: record.get('todo.message'),
-                        completed: record.get('todo.completed')
-                    }))
-                    if (response) {
-                        return response
-
-                    }
-                    return null
-                } finally {
-                    await session.close()
-                }
-            }
-
-        },
-        finishWithMerge: async (parent, args, context) => {
-            if (args.id != null) {
-                const {driver} = context
-                const mergeTodoCypher = `
-                    MERGE (todo:Todo {id: $id})
-                    ON MATCH SET todo.completed = True
-                    RETURN todo.id, todo.message, todo.completed
-                `
-                const session = driver.session()
-                try {
-                    const _response = await session.run(mergeTodoCypher, {id: args.id})
+                    const _response = await session.run(editTodoCypher, {id: args.id, message: args.message, uid:context.user.id})
                     const [response] = await _response.records.map(record => ({
                         id: record.get('todo.id'),
                         message: record.get('todo.message'),
@@ -238,13 +212,13 @@ const resolvers = {
             if (args.id != null) {
                 const {driver} = context
                 const finishTodoCypher = `
-                MATCH (todo:Todo{id: $id})
+                MATCH (todo:Todo {id: $id})-[:ASSIGNED]->(user:User {id: $uid})
                 SET todo.completed = True
                 RETURN todo.id, todo.message, todo.completed
                 `
                 const session = driver.session()
                 try {
-                    const _response = await session.run(finishTodoCypher, {id: args.id})
+                    const _response = await session.run(finishTodoCypher, {id: args.id, uid:context.user.id})
                     const [response] = await _response.records.map(record => ({
                         id: record.get('todo.id'),
                         message: record.get('todo.message'),
