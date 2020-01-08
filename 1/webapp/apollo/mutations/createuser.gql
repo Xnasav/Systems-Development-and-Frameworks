@@ -1,0 +1,6 @@
+mutation createUser($login:String!, $password:String!) {
+  addAgent(login: $login, password:$password) {
+    id,
+    login
+  }
+}

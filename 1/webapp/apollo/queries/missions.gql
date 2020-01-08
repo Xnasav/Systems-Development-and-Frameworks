@@ -1,0 +1,8 @@
+query Missions($limit: Int!, $skip: Int!)
+{
+  missions(limit:$limit, skip:$skip){
+    id,
+    message,
+    completed
+  }
+}

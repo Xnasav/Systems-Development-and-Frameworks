@@ -8,26 +8,26 @@ npm start
 #####  GraphQL queries
 ```javascript
 # Write your query or mutation here
-query AllTodos{
-  todos{
+query AllMissions{
+  missions{
     message
     completed
     id
   }
 }
 
-mutation NewTodo{
-  addTodo(message: "Apollo Server starten") {
+mutation NewMission{
+  addMission(message: "Apollo Server starten") {
     message
   }
 }
 
-mutation RemoveTodo{
-  deleteTodo(id: 3)
+mutation RemoveMission{
+  deleteMission(id: 3)
 }
 
-mutation EditTodo{
-  editTodo(id: 3, message: "Apollo Server zweimal Starten"){
+mutation EditMission{
+  editMission(id: 3, message: "Apollo Server zweimal Starten"){
     message
   }
 }
@@ -37,7 +37,7 @@ mutation FirstLogin{
 }
 
 mutation FinishItem{
-  finishTodo(id:1){
+  finishMission(id:1){
     message
   	completed
   }
