@@ -1,23 +1,20 @@
 <template>
   <div>
-    <div v-bind:key="mission.id" v-for="mission in missions">
-      <MissionItem v-bind:mission="mission" v-on:del-todo="$emit('del-mission', mission.id)"
-                   v-on:edit-mission="editMission"/>
-    </div>
+    <ul>
+      <li v-for="mission in missions" :key="missions.id">
+        <NuxtLink :to="`mission/${mission.id}`">
+          {{ mission.message }} {{ mission.completed }}
+        </NuxtLink>
+      </li>
+    </ul>
   </div>
 </template>
 
 <script>
-    import MissionItem from "./Missions/MissionItem";
     import missions from '~/apollo/queries/missions'
 
 
     export default {
-        name: "Missions",
-        components: {
-            MissionItem
-        },
-        props: ["mission"],
         apollo: {
             missions: {
                 prefetch: true,

@@ -1,0 +1,8 @@
+query Missions($id: ID!)
+{
+  mission(id: $id){
+    id,
+    message,
+    completed
+  }
+}

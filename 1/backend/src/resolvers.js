@@ -9,7 +9,7 @@ let SECRET_KEY = fs.readFileSync('./src/key/secret.key', 'utf8');
 const resolvers = {
     Query: {
         missions: async (parent, args, context) => {
-            // JSON.parse(JSON.stringify(data.missions))
+            // JSON.parse(JSON.stringify(data.mission))
             if (args.limit !== "" && args.limit !== null && args.skip !== "" && args.skip !== null) {
                 const {driver} = context
                 let getMissionCypher
@@ -38,6 +38,32 @@ const resolvers = {
                 } finally {
                     await session.close()
                 }
+            }
+        },
+        mission: async(parent, args, context) => {
+            const {driver} = context
+            let getMissionCypher
+            getMissionCypher = `
+                    MATCH (mission:Mission {id: $id})-[:ASSIGNED]->(u:Agent)
+                    WHERE u.login = $username
+                    RETURN mission.id, mission.message, mission.completed
+                `
+            const session = driver.session()
+            try {
+                data = await session.run(getMissionCypher, {
+                    username: context.user.login,
+                    id: args.id
+                })
+                const [mission] = await data.records.map(record => ({
+                    id: record.get('mission.id'),
+                    message: record.get('mission.message'),
+                    completed: record.get('mission.completed')
+
+                }))
+                json_data = JSON.parse(JSON.stringify(mission))
+                return json_data
+            } finally {
+                await session.close()
             }
         },
         completedMissions: async (parent, args, context) => {

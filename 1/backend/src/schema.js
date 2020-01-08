@@ -3,6 +3,7 @@ const { gql } = require('apollo-server');
 const typeDefs = gql`
 type Query {
   missions(limit: Int!, skip: Int!): [Mission],
+  mission(id: ID!): Mission,
   completedMissions: [Mission]
 }
 

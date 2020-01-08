@@ -156,13 +156,13 @@ describe('Get Mission', () => {
 })
 
 describe('Get Missions unauthorized', () => {
-    it("Receives missions unauthenticated", async () => {
+    it("Receives mission unauthenticated", async () => {
         const mission = await query({query: GET_MISSIONS, variables: {limit: 10}})
         expect(mission.errors[0]).toHaveProperty('message', 'Not Authorised!')
     })
 })
 
-describe('Get completed missions only (DESC)', () => {
+describe('Get completed mission only (DESC)', () => {
     let mission
 
     beforeEach(async () => {
@@ -173,7 +173,7 @@ describe('Get completed missions only (DESC)', () => {
         }
     })
 
-    it("Receives all completed missions", async () => {
+    it("Receives all completed mission", async () => {
         const mission_c = await mutate({mutation: CREATE_MISSION, variables: {message: "c"}})
         const mission_a = await mutate({mutation: CREATE_MISSION, variables: {message: "a"}})
         const mission_b = await mutate({mutation: CREATE_MISSION, variables: {message: "b"}})
