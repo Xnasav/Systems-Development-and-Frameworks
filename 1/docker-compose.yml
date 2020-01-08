@@ -8,12 +8,6 @@ services:
       - pa-network
     depends_on:
       - neo4j
-  webapp:
-    build: frontend/.
-    ports:
-      - 8080:80
-    depends_on:
-      - neo4j
   neo4j:
     build: neo4j/.
     ports:
