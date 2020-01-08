@@ -1,13 +1,15 @@
 <template>
   <div>
     <div v-bind:key="mission.id" v-for="mission in missions">
-      <MissionItem v-bind:mission="mission" v-on:del-todo="$emit('del-mission', mission.id)" v-on:edit-mission="editMission"/>
+      <MissionItem v-bind:mission="mission" v-on:del-todo="$emit('del-mission', mission.id)"
+                   v-on:edit-mission="editMission"/>
     </div>
   </div>
 </template>
 
 <script>
     import MissionItem from "./Missions/MissionItem";
+    import missions from '~/apollo/queries/missions'
 
     export default {
         name: "Missions",
@@ -15,18 +17,17 @@
             MissionItem
         },
         props: ["mission"],
-        data() {
-            return {
-                missions: [
-                    { id: '1', message: 'Destroy terror', completed: false},
-                    { id: '2', message: 'Do agent stuff', completed: false},
-                    { id: '3', message: 'Eat', completed: false}
-                ],
-                nextTodoId: 4
-            }
+        apollo: {
+            missions: {
+                prefetch: true,
+                query: missions,
+                variables() {
+                    return {limit: 2, skip: 0}
+                }
+            },
         },
         methods: {
-            editMission(id, newMessage){
+            editMission(id, newMessage) {
                 console.log(id + " " + newMessage)
             }
         }
