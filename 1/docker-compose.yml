@@ -24,5 +24,13 @@ services:
       - NEO4J_ACCEPT_LICENSE_AGREEMENT=yes
     networks:
       - pa-network
+  nuxt:
+    depends_on:
+      - neo4j
+    build: webapp/.
+    ports:
+      - "3000:3000"
+    networks:
+      - pa-network
 networks:
   pa-network:

@@ -2,9 +2,6 @@
   <div v-if="mission">
     {{mission.message}}
   </div>
-  <div v-else>
-    AHHH
-  </div>
 </template>
 
 <script>
